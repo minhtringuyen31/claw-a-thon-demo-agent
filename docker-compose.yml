@@ -5,6 +5,12 @@ services:
       - "8080:8080"
     env_file: .env
 
+  fraud-risk-analysis-agent:
+    build: ./fraud-risk-analysis-agent
+    ports:
+      - "8081:8080"
+    env_file: .env
+
   ui:
     build: ./ui
     ports:
