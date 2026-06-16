@@ -1,0 +1,46 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Reject if transaction count in 4 hours > 10 AND total amount in 7 days > 50 million VND",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "",
+      "variables": [
+        {
+          "fieldName": "count_txn_4h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "count_txn_4h|${userid}"
+          }
+        },
+        {
+          "fieldName": "sum_amount_7d",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_7d|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "Reject high txn count 4h and high amount 7d",
+          "description": "Reject if transaction count in 4 hours > 10 AND total amount in 7 days > 50 million VND",
+          "conditions": [
+            {
+              "field": "count_txn_4h",
+              "operator": "GREATER_THAN",
+              "value": "10"
+            },
+            {
+              "field": "sum_amount_7d",
+              "operator": "GREATER_THAN",
+              "value": "50000000"
+            }
+          ],
+          "infoCode": ""
+        }
+      ]
+    }
+  ]
+}

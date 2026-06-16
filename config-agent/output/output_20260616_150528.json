@@ -1,0 +1,34 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Tổng giao dịch trong 4h vượt ngưỡng 500k",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "",
+      "variables": [
+        {
+          "fieldName": "sum_amount_4h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_4h|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "total_4h_exceeds_500k",
+          "description": "Rule tổng giao dịch trong 4h lớn hơn 500.000 VND thì reject",
+          "conditions": [
+            {
+              "field": "sum_amount_4h",
+              "operator": "GREATER_THAN",
+              "value": "500000"
+            }
+          ],
+          "infoCode": ""
+        }
+      ]
+    }
+  ]
+}

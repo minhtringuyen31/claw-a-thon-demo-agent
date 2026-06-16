@@ -1,0 +1,40 @@
+{
+  "id": null,
+  "version": 1,
+  "name": "App ID 123 High Amount Rejection",
+  "filter": "AND",
+  "conditions": [
+    {
+      "id": null,
+      "field": "appid",
+      "operator": "EQUAL",
+      "value": "123"
+    }
+  ],
+  "tiers": [
+    {
+      "id": null,
+      "name": "High Amount Tier",
+      "status": 1,
+      "priority": 1,
+      "filter": "AND",
+      "conditions": [],
+      "rules": [
+        {
+          "id": null,
+          "name": "Reject transactions exceeding 5 million",
+          "status": 1,
+          "ruleCatch": "AND",
+          "conditions": [
+            {
+              "id": null,
+              "field": "amount",
+              "operator": "GREATER_THAN",
+              "value": "5000000"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

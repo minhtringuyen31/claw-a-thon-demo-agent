@@ -1,0 +1,31 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Reject transactions when amount exceeds 5 million VND and payment source is e-wallet",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "",
+      "variables": [],
+      "rules": [
+        {
+          "name": "high_value_ewallet_rejection",
+          "description": "Reject transactions when amount exceeds 5 million VND and payment source is e-wallet",
+          "conditions": [
+            {
+              "field": "amount",
+              "operator": "GREATER_THAN",
+              "value": "5000000"
+            },
+            {
+              "field": "channel",
+              "operator": "EQUALS",
+              "value": "wallet"
+            }
+          ],
+          "infoCode": ""
+        }
+      ]
+    }
+  ]
+}

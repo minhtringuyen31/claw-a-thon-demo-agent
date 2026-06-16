@@ -1,0 +1,33 @@
+{
+  "id": null,
+  "version": 1,
+  "name": "Amount threshold rule",
+  "filter": "AND",
+  "conditions": [],
+  "tiers": [
+    {
+      "id": null,
+      "name": "High Amount Tier",
+      "status": 1,
+      "priority": 8,
+      "filter": "AND",
+      "conditions": [],
+      "rules": [
+        {
+          "id": null,
+          "name": "Reject transactions exceeding 5 million VND",
+          "status": 1,
+          "ruleCatch": "AND",
+          "conditions": [
+            {
+              "id": null,
+              "field": "amount",
+              "operator": "GREATER_THAN",
+              "value": "5000000"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
