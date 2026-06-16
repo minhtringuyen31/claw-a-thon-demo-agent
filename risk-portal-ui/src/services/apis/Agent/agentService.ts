@@ -191,6 +191,10 @@ export const getRun = async (runId: string): Promise<RunOut> => {
   return res.data;
 };
 
+export const deleteRun = async (runId: string): Promise<void> => {
+  await agentInstance.delete(`/runs/${runId}`);
+};
+
 export const createRun = async (payload: CreateRunPayload): Promise<RunOut> => {
   const res = await agentInstance.post<RunOut>('/runs', payload);
   return res.data;

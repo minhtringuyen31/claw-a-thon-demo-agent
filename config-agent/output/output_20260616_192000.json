@@ -1,0 +1,39 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "High Amount New Account Detection - Reject fraud users with sum_amount_24h >= 10M VND and account_age <= 7 days (precision 94.44%)",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "CF_HIGH_AMOUNT_NEW_ACCOUNT",
+      "variables": [
+        {
+          "fieldName": "sum_amount_24h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_24h|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "High Amount 24h New Account Rule",
+          "description": "Reject users with total transaction amount in 24h >= 10M VND and account age <= 7 days",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN_OR_EQUALS",
+              "value": "10000000"
+            },
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN_OR_EQUALS",
+              "value": "604800"
+            }
+          ],
+          "infoCode": "HIGH_AMOUNT_NEW_ACCOUNT_DETECTED"
+        }
+      ]
+    }
+  ]
+}

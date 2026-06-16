@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { DataGrid, KeenIcon } from '@/components';
 import { Container } from '@/components/container';
-import { getRun, listRuns, triggerPostmortem, RunOut, RunStatus } from '@/services/apis/Agent';
+import { deleteRun, getRun, listRuns, triggerPostmortem, RunOut, RunStatus } from '@/services/apis/Agent';
 
 // ─── Quick Test cases ─────────────────────────────────────────────────────────
 
@@ -186,6 +186,7 @@ const InvestigationListPage = () => {
   const [runs, setRuns] = useState<RunOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [agentOnline, setAgentOnline] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchRuns = useCallback(async () => {
@@ -346,16 +347,44 @@ const InvestigationListPage = () => {
         id: 'actions',
         header: () => '',
         enableSorting: false,
-        cell: ({ row }) => (
-          <button
-            className="btn btn-sm btn-icon btn-clear btn-light"
-            title="View detail"
-            onClick={() => navigate(`/ai-investigation/${row.original.run_id}`)}
-          >
-            <KeenIcon icon="eye" />
-          </button>
-        ),
-        meta: { className: 'w-[60px]' },
+        cell: ({ row }) => {
+          const runId = row.original.run_id;
+          const isRunning = row.original.status === 'running';
+          const isDeleting = deletingId === runId;
+          return (
+            <div className="flex items-center gap-1">
+              <button
+                className="btn btn-sm btn-icon btn-clear btn-light"
+                title="View detail"
+                onClick={() => navigate(`/ai-investigation/${runId}`)}
+              >
+                <KeenIcon icon="eye" />
+              </button>
+              <button
+                className="btn btn-sm btn-icon btn-clear btn-light-danger"
+                title={isRunning ? 'Stop & delete run' : 'Delete run'}
+                disabled={isDeleting}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!confirm(`Delete run ${runId}?`)) return;
+                  setDeletingId(runId);
+                  try {
+                    await deleteRun(runId);
+                    setRuns((prev) => prev.filter((r) => r.run_id !== runId));
+                  } finally {
+                    setDeletingId(null);
+                  }
+                }}
+              >
+                {isDeleting
+                  ? <span className="spinner-border spinner-border-sm" />
+                  : <KeenIcon icon={isRunning ? 'stop' : 'trash'} />
+                }
+              </button>
+            </div>
+          );
+        },
+        meta: { className: 'w-[100px]' },
       },
     ],
     [navigate]
@@ -368,8 +397,8 @@ const InvestigationListPage = () => {
         {!agentOnline && (
           <div className="flex items-center gap-3 px-4 py-3 bg-warning-light border border-warning rounded-lg text-sm text-warning-dark">
             <KeenIcon icon="information-2" className="shrink-0 text-warning" />
-            Agent is offline — showing cached data. Start the agent at{' '}
-            <code className="font-mono text-xs">localhost:8000</code>
+            Cannot connect to agent
+            <code className="font-mono text-xs">fraud-analysis-agent</code>
           </div>
         )}
 

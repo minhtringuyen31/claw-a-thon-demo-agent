@@ -550,7 +550,7 @@ Most cost is in the ReAct loop. Reducing `max_iterations` cuts cost linearly.
 ## 15. Code layout
 
 ```
-fraud-risk-analysis-agent/
+fraud-analysis-agent/
   app/
     state.py                          # all Pydantic models + AgentState TypedDict
     main.py                           # CLI entry
@@ -610,14 +610,14 @@ docker-compose.yml
 
 **Run end-to-end CLI:**
 ```bash
-cd fraud-risk-analysis-agent
+cd fraud-analysis-agent
 set -a && source ../.env && set +a
 CHECKPOINTER_BACKEND=memory PYTHONPATH=. uv run python scripts/e2e_test.py
 ```
 
 **Start service + UI:**
 ```bash
-cd fraud-risk-analysis-agent
+cd fraud-analysis-agent
 set -a && source ../.env && set +a
 CHECKPOINTER_BACKEND=sqlite PYTHONPATH=. uv run uvicorn app.service:app --port 8000 &
 AGENT_URL=http://localhost:8000 uv run streamlit run review_ui.py --server.port 8501 &
@@ -626,7 +626,7 @@ AGENT_URL=http://localhost:8000 uv run streamlit run review_ui.py --server.port 
 
 **Seed MySQL (destructive — re-creates tables):**
 ```bash
-cd fraud-risk-analysis-agent
+cd fraud-analysis-agent
 set -a && source ../.env && set +a
 uv run python -m app.data.seed_mysql
 ```

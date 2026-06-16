@@ -60,6 +60,7 @@ const Main = () => {
           {/* <Footer /> */}
         </div>
       </div>
+
     </Fragment>
   );
 };

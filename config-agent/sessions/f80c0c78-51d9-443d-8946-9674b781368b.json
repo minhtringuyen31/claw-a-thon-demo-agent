@@ -1,0 +1,30 @@
+{
+  "session_id": "f80c0c78-51d9-443d-8946-9674b781368b",
+  "title": "Tạo rule reject nếu tổng tiền 24h > 10M và tài khoản < 7 ngày",
+  "created_at": "2026-06-16T12:42:16.417185+00:00",
+  "updated_at": "2026-06-16T12:43:29.919523+00:00",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tạo rule reject nếu tổng tiền 24h > 10M và tài khoản < 7 ngày",
+      "timestamp": "2026-06-16T12:42:16.417218+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Application ID (app_id) hoặc event name (ví dụ: payment, transfer) là gì?",
+      "timestamp": "2026-06-16T12:42:58.162135+00:00"
+    },
+    {
+      "role": "user",
+      "content": "event name payment",
+      "timestamp": "2026-06-16T12:43:15.597640+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Bạn có thể cung cấp app_id hoặc event name (ví dụ: payment, transfer) cho rule này không?",
+      "timestamp": "2026-06-16T12:43:29.919505+00:00"
+    }
+  ],
+  "status": "clarifying",
+  "final_output": null
+}

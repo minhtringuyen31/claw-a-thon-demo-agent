@@ -1,0 +1,46 @@
+{
+  "events": [
+    {
+      "name": "transaction",
+      "description": "CF High Amount + New Account Pattern fraud detection",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "",
+      "variables": [
+        {
+          "fieldName": "sum_amount_24h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_24d|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "High Amount 24h Rule",
+          "description": "Check if total transaction amount in 24h exceeds 10M VND",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN",
+              "value": "10000000"
+            }
+          ],
+          "infoCode": ""
+        },
+        {
+          "name": "New Account Age Rule",
+          "description": "Check if account age is less than 7 days (604800 seconds)",
+          "conditions": [
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN",
+              "value": "604800"
+            }
+          ],
+          "infoCode": ""
+        }
+      ]
+    }
+  ]
+}

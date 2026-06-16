@@ -1,0 +1,73 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Phát hiện gian lận CF với tổng giao dịch trong 24h >= 10 triệu VND và tài khoản mới hơn 7 ngày",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "CF_HIGH_AMOUNT_NEW_ACCOUNT",
+      "variables": [
+        {
+          "fieldName": "sum_amount_24h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_24h|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "High Amount New Account Rule",
+          "description": "CF: High Amount + New Account Detection - REJECT if sum_amount_24h >= 10M VND and account_age <= 7 days",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN_OR_EQUAL",
+              "value": "10000000"
+            },
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN_OR_EQUAL",
+              "value": "604800"
+            }
+          ],
+          "infoCode": "CF_HIGH_AMOUNT_NEW_ACCOUNT"
+        },
+        {
+          "name": "rule_24h_amount_10M_account_age_7d",
+          "description": "CF: Fraud users with total amount in 24h >= 10M VND and account age <= 7 days have higher precision",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN",
+              "value": "10000000"
+            },
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN",
+              "value": "604800"
+            }
+          ],
+          "infoCode": ""
+        },
+        {
+          "name": "CF - High 24h Amount + New Account",
+          "description": "Fraud users with total transaction amount in 24h >= 10M VND and account age <= 7 days have higher precision (94.44%)",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN",
+              "value": "10000000"
+            },
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN",
+              "value": "604800"
+            }
+          ],
+          "infoCode": ""
+        }
+      ]
+    }
+  ]
+}

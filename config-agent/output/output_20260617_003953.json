@@ -1,0 +1,39 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Fraud detection for payment transactions",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "",
+      "variables": [
+        {
+          "fieldName": "sum_amount_24h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_24h|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "rule_sum_amount_24h_10M_and_account_age_7d",
+          "description": "Fraud users có tổng số tiền giao dịch trong 24h >= 10 triệu VND và tuổi tài khoản <= 7 ngày có precision cao hơn. Precision 94.44%, recall 88.1%",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN",
+              "value": "10000000"
+            },
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN",
+              "value": "604800"
+            }
+          ],
+          "infoCode": ""
+        }
+      ]
+    }
+  ]
+}

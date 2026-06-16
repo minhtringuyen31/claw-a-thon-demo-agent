@@ -1,0 +1,39 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Phát hiện gian lận CF với tổng giao dịch trong 24h >= 10 triệu VND và tài khoản mới hơn 7 ngày",
+      "filter": "AND",
+      "actionCode": "REJECT",
+      "decisionCode": "CF_HIGH_AMOUNT_NEW_ACCOUNT",
+      "variables": [
+        {
+          "fieldName": "sum_amount_24h",
+          "fieldType": "LONG",
+          "source": {
+            "keyId": "sum_amount_24h|${userid}"
+          }
+        }
+      ],
+      "rules": [
+        {
+          "name": "High Amount New Account Rule",
+          "description": "CF: High Amount + New Account Detection - REJECT if sum_amount_24h >= 10M VND and account_age <= 7 days",
+          "conditions": [
+            {
+              "field": "sum_amount_24h",
+              "operator": "GREATER_THAN_OR_EQUAL",
+              "value": "10000000"
+            },
+            {
+              "field": "account_age",
+              "operator": "LESS_THAN_OR_EQUAL",
+              "value": "604800"
+            }
+          ],
+          "infoCode": "CF_HIGH_AMOUNT_NEW_ACCOUNT"
+        }
+      ]
+    }
+  ]
+}

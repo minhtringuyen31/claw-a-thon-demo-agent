@@ -11,8 +11,8 @@ services:
       - MYSQL_USER=root
       - MYSQL_PASSWORD=agentdb@123
 
-  fraud-risk-analysis-agent:
-    build: ./fraud-risk-analysis-agent
+  fraud-analysis-agent:
+    build: ./fraud-analysis-agent
     ports:
       - "8081:8080"
     env_file: .env
@@ -36,9 +36,9 @@ services:
     build:
       context: ./risk-portal-ui
       args:
-        VITE_AGENT_URL: ${VITE_AGENT_URL:-http://fraud-risk-analysis-agent:8080}
+        VITE_AGENT_URL: ${VITE_AGENT_URL:-http://fraud-analysis-agent:8080}
         VITE_SERVER_URL: ${VITE_SERVER_URL:-}
     ports:
       - "3000:8080"
     depends_on:
-      - fraud-risk-analysis-agent
+      - fraud-analysis-agent

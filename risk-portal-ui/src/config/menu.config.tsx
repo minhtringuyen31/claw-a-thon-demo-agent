@@ -18,6 +18,12 @@ const RISK_MENU: MenuConfigType = [
     icon: 'setting-2',
     rootPath: '/',
     path: '/rule-management'
+  },
+  {
+    title: 'Config Assistant',
+    icon: 'messages',
+    rootPath: '/',
+    path: '/chat-assistant'
   }
 ];
 

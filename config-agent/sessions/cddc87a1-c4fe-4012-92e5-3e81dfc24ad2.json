@@ -1,0 +1,66 @@
+{
+  "session_id": "cddc87a1-c4fe-4012-92e5-3e81dfc24ad2",
+  "title": "Tạo fraud rule cho event: transaction\nLoại gian lận: CF\nPattern: Fraud users có ",
+  "created_at": "2026-06-16T17:39:08.164642+00:00",
+  "updated_at": "2026-06-16T17:39:25.238249+00:00",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tạo fraud rule cho event: transaction\nLoại gian lận: CF\nPattern: Fraud users có total_amount_24h >= 10M VND + account_age <= 7d sẽ có precision cao hơn\nAction: REJECT\nLý do: Rule translog + profile đạt precision 94.44% và recall 88.1%, vượt cả min_precision=0.8 và min_recall=0.6. Với precision >= 90%, rule đủ điều kiện cho REJECT action theo KB §8.3. Good user impact được ước tính thấp (~5.6% FP rate = 27/486).\nRecommendation: Đề xuất: REJECT | rule: Fraud users có total_amount_24h >= 10M VND + account_age <= 7d sẽ có precision cao hơn | precision=0.9444 recall=0.881 f1=0.9116.",
+      "timestamp": "2026-06-16T17:39:08.165215+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Config generated successfully.",
+      "timestamp": "2026-06-16T17:39:25.238239+00:00"
+    }
+  ],
+  "status": "done",
+  "final_output": {
+    "events": [
+      {
+        "name": "transaction",
+        "description": "CF High Amount + New Account Pattern fraud detection",
+        "filter": "AND",
+        "actionCode": "REJECT",
+        "decisionCode": "",
+        "variables": [
+          {
+            "fieldName": "sum_amount_24h",
+            "fieldType": "LONG",
+            "source": {
+              "keyId": "sum_amount_24d|${userid}"
+            }
+          }
+        ],
+        "rules": [
+          {
+            "name": "High Amount 24h Rule",
+            "description": "Check if total transaction amount in 24h exceeds 10M VND",
+            "conditions": [
+              {
+                "field": "sum_amount_24h",
+                "operator": "GREATER_THAN",
+                "value": "10000000"
+              }
+            ],
+            "infoCode": ""
+          },
+          {
+            "name": "New Account Age Rule",
+            "description": "Check if account age is less than 7 days (604800 seconds)",
+            "conditions": [
+              {
+                "field": "account_age",
+                "operator": "LESS_THAN",
+                "value": "604800"
+              }
+            ],
+            "infoCode": ""
+          }
+        ]
+      }
+    ]
+  },
+  "output_file": "output/output_20260617_003925.json"
+}

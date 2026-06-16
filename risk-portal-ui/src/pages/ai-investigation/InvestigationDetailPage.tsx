@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { KeenIcon } from '@/components';
 import { Container } from '@/components/container';
 import {
-  getRun, streamRun,
+  getRun, streamRun, deleteRun,
   AgentTraceEvent, InvestigationLogEntry,
   IngestEvent, AnomalyCheckEvent, FetchDataEvent,
   FinalizeEvent, PolicyOutputEvent, ActionOutputEvent,
@@ -64,29 +64,19 @@ const PatternCard = ({ p, index }: { p: PatternAttempt; index: number }) => (
     </div>
 
     {p.metrics && (
-      <div className="grid grid-cols-3 gap-4 mb-3">
+      <div className="grid grid-cols-2 gap-4 mb-3">
         <MetricBar label="Precision" value={p.metrics.precision} />
         <MetricBar label="Recall" value={p.metrics.recall} />
-        <MetricBar label="F1" value={p.metrics.f1} />
       </div>
     )}
 
     {p.metrics && (
-      <div className="flex gap-4 text-xs text-gray-500 mb-3">
+      <div className="flex gap-4 text-xs text-gray-500">
         <span>Hit: <strong className="text-gray-700">{p.metrics.hit_count}</strong></span>
         <span>Flagged: <strong className="text-gray-700">{p.metrics.total_flagged}</strong></span>
         <span>Total fraud: <strong className="text-gray-700">{p.metrics.total_fraud}</strong></span>
       </div>
     )}
-
-    <details className="group">
-      <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 select-none">
-        SQL predicate
-      </summary>
-      <pre className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono text-gray-700 overflow-x-auto whitespace-pre-wrap">
-        {p.sql_predicate}
-      </pre>
-    </details>
   </div>
 );
 
@@ -275,7 +265,6 @@ const PolicyOutputRow = ({ step, isLast }: { step: PolicyOutputEvent; isLast: bo
       <div className="flex gap-3 mt-1 text-[11px] text-gray-500">
         <span>P: <strong className="text-gray-700">{(step.metrics.precision * 100).toFixed(0)}%</strong></span>
         <span>R: <strong className="text-gray-700">{(step.metrics.recall * 100).toFixed(0)}%</strong></span>
-        <span>F1: <strong className="text-gray-700">{(step.metrics.f1 * 100).toFixed(0)}%</strong></span>
       </div>
     )}
   </TimelineRow>
@@ -302,7 +291,7 @@ const TraceStep = ({ step, isLast }: { step: AgentTraceEvent; isLast: boolean })
 
 // ─── Agent Step Log ───────────────────────────────────────────────────────────
 
-const AgentStepLog = ({ runId }: { runId: string }) => {
+const AgentStepLog = ({ runId, autoScroll = true }: { runId: string; autoScroll?: boolean }) => {
   const [open, setOpen]           = useState(true);
   const [steps, setSteps]         = useState<AgentTraceEvent[]>([]);
   const [streaming, setStreaming] = useState(false);
@@ -332,8 +321,10 @@ const AgentStepLog = ({ runId }: { runId: string }) => {
   }, [runId]);
 
   useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [steps, open]);
+    if (open && streaming && autoScroll) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  }, [steps, open, streaming, autoScroll]);
 
   return (
     <div className="card">
@@ -363,7 +354,7 @@ const AgentStepLog = ({ runId }: { runId: string }) => {
               onClick={(e) => { e.stopPropagation(); start(); }}
             >
               <KeenIcon icon="arrows-circle" className="text-xs" />
-              {done ? 'Replay' : 'Start'}
+              {!done && 'Start'}
             </span>
           )}
           <KeenIcon
@@ -379,7 +370,7 @@ const AgentStepLog = ({ runId }: { runId: string }) => {
           {error && (
             <div className="flex items-center gap-2 px-3 py-2 bg-danger-light border border-danger/20 rounded-lg text-xs text-danger mb-3">
               <KeenIcon icon="information-2" className="shrink-0" />
-              <span>Không kết nối được SSE: <code className="font-mono">{error}</code></span>
+              <span>Can not connect SSE: <code className="font-mono">{error}</code></span>
               <button className="ms-auto btn btn-xs btn-clear btn-danger" onClick={start}>Retry</button>
             </div>
           )}
@@ -387,7 +378,7 @@ const AgentStepLog = ({ runId }: { runId: string }) => {
           {steps.length === 0 && !streaming && !error && (
             <div className="flex flex-col items-center justify-center py-10 gap-2 text-gray-400">
               <KeenIcon icon="code" className="text-3xl text-gray-200" />
-              <p className="text-xs">Không có trace data</p>
+              <p className="text-xs">No trace data is available</p>
             </div>
           )}
 
@@ -397,9 +388,26 @@ const AgentStepLog = ({ runId }: { runId: string }) => {
             ))}
 
             {streaming && (
-              <div className="flex gap-3 items-center">
-                <div className="size-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse shrink-0" />
-                <span className="text-xs text-gray-400 italic">Agent đang thực thi…</span>
+              <div className="flex gap-3 items-center py-1">
+                {/* Animated avatar ring */}
+                <div className="relative size-7 shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                  <div className="relative size-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <svg className="size-3.5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  </div>
+                </div>
+                {/* Typing dots + label */}
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-3 py-2">
+                  <span className="text-xs text-gray-500 italic">Reasoning</span>
+                  <span className="flex gap-0.5 items-end h-3">
+                    <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </div>
               </div>
             )}
 
@@ -419,6 +427,7 @@ const InvestigationDetailPage = () => {
   const [run, setRun] = useState<RunOut | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchRun = async () => {
@@ -518,6 +527,26 @@ const InvestigationDetailPage = () => {
         >
           <KeenIcon icon="arrows-circle" />
         </button>
+        <button
+          className="btn btn-sm btn-icon btn-light-danger"
+          title={run.status === 'running' ? 'Stop & delete run' : 'Delete run'}
+          disabled={deleting}
+          onClick={async () => {
+            if (!confirm(`Delete run ${run.run_id}?`)) return;
+            setDeleting(true);
+            try {
+              await deleteRun(run.run_id);
+              navigate('/ai-investigation');
+            } catch {
+              setDeleting(false);
+            }
+          }}
+        >
+          {deleting
+            ? <span className="spinner-border spinner-border-sm" />
+            : <KeenIcon icon={run.status === 'running' ? 'stop' : 'trash'} />
+          }
+        </button>
       </div>
 
       {/* Running state */}
@@ -528,7 +557,7 @@ const InvestigationDetailPage = () => {
             <div>
               <p className="text-sm font-medium text-gray-800">Agent is investigating...</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Auto-refreshing every 4 seconds. This may take a few minutes.
+                The agent is analyzing and processing the data. This may take a few minutes.
               </p>
             </div>
           </div>
@@ -553,7 +582,7 @@ const InvestigationDetailPage = () => {
         </div>
       )}
 
-      {/* Anomaly Decision */}
+      {/* 1 — Anomaly Detection */}
       {anomaly && (
         <div className="card p-5">
           <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -596,100 +625,7 @@ const InvestigationDetailPage = () => {
         </div>
       )}
 
-      {/* Rule JSON — final policy output */}
-      {ruleJson && (
-        <div className="card p-5">
-          <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <KeenIcon icon="document-up" className="text-gray-500" />
-            Generated Rule
-          </h3>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-1">Rule Name</p>
-              <p className="text-sm font-mono font-medium text-gray-800">{ruleJson.rule_name}</p>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-1">Fraud Type</p>
-              <p className="text-sm font-medium text-gray-800">{ruleJson.fraud_type}</p>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-1">Recommended Action</p>
-              <span
-                className={`badge badge-${ACTION_COLOR[ruleJson.recommended_action] ?? 'secondary'} badge-outline rounded-[30px] text-xs mt-1`}
-              >
-                {ruleJson.recommended_action}
-              </span>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-3">Metrics</p>
-              <div className="flex flex-col gap-1">
-                <MetricBar label="Precision" value={ruleJson.metrics.precision} />
-                <MetricBar label="Recall" value={ruleJson.metrics.recall} />
-                <MetricBar label="F1" value={ruleJson.metrics.f1} />
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-1">Signal Columns</p>
-            <div className="flex flex-wrap gap-1.5">
-              {ruleJson.signal_columns.map((col) => (
-                <span key={col} className="badge badge-light badge-outline text-xs font-mono rounded">
-                  {col}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs text-gray-500 mb-1">SQL Predicate</p>
-            <pre className="p-3 bg-gray-50 rounded-lg text-xs font-mono text-gray-700 overflow-x-auto whitespace-pre-wrap">
-              {ruleJson.sql_predicate}
-            </pre>
-          </div>
-        </div>
-      )}
-
-      {/* Next step: Configure rule */}
-      {ruleJson && (
-        <div className="card p-5 border-2 border-primary/20 bg-primary/5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center size-7 rounded-full bg-success text-white text-xs font-bold shrink-0">✓</span>
-                <span className="text-sm text-gray-500">Investigation</span>
-                <KeenIcon icon="arrow-right" className="text-gray-400 text-xs" />
-                <span className="flex items-center justify-center size-7 rounded-full bg-primary text-white text-xs font-bold shrink-0">2</span>
-                <span className="text-sm font-semibold text-gray-800">Configure &amp; Deploy Rule</span>
-              </div>
-              <p className="text-sm text-gray-500 hidden lg:block">
-                Open the Config Agent to resolve dependencies, dry-run and deploy <span className="font-mono text-xs text-gray-700">{ruleJson.rule_name}</span> to the rule engine.
-              </p>
-            </div>
-            <button
-              className="btn btn-primary btn-sm shrink-0"
-              onClick={() => navigate(`/ai-investigation/${run.run_id}/assistant`)}
-            >
-              <KeenIcon icon="robot" />
-              Open Config Agent
-              <KeenIcon icon="arrow-right" className="ms-1" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* No-action report */}
-      {noAction && (
-        <div className="card p-5">
-          <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <KeenIcon icon="check-circle" className="text-success" />
-            No Action Required
-          </h3>
-          <p className="text-sm text-gray-600">{noAction.recommendation}</p>
-        </div>
-      )}
-
-      {/* Pattern attempts */}
+      {/* 2 — Pattern Attempts */}
       {report && report.patterns_attempted.length > 0 && (
         <div className="card p-5">
           <h3 className="text-base font-semibold text-gray-800 mb-1 flex items-center gap-2">
@@ -711,8 +647,97 @@ const InvestigationDetailPage = () => {
         </div>
       )}
 
-      {/* Agent Step Log */}
-      <AgentStepLog runId={run.run_id} />
+      {/* 3 — Final Recommendation */}
+      {(report?.recommendation || noAction?.recommendation) && (
+        <div className="card p-5">
+          <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <KeenIcon icon="check-circle" className={noAction ? 'text-success' : 'text-primary'} />
+            Final Recommendation
+          </h3>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {report?.recommendation ?? noAction?.recommendation}
+          </p>
+        </div>
+      )}
+
+      {/* 4 — Generated Rule */}
+      {ruleJson && (
+        <div className="card p-5">
+          <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <KeenIcon icon="document-up" className="text-gray-500" />
+            Generated Rule
+          </h3>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Rule Name</p>
+              <p className="text-sm font-mono font-medium text-gray-800">{ruleJson.rule_name}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Fraud Type</p>
+              <p className="text-sm font-medium text-gray-800">{ruleJson.fraud_type}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Recommended Action</p>
+              <span
+                className={`badge badge-${ACTION_COLOR[ruleJson.recommended_action] ?? 'secondary'} badge-outline rounded-[30px] text-xs mt-1`}
+              >
+                {ruleJson.recommended_action}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Metrics</p>
+              <div className="flex flex-col gap-2">
+                <MetricBar label="Precision" value={ruleJson.metrics.precision} />
+                <MetricBar label="Recall" value={ruleJson.metrics.recall} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Signal Columns</p>
+              <div className="flex flex-wrap gap-1.5">
+                {ruleJson.signal_columns.map((col) => (
+                  <span key={col} className="badge badge-light badge-outline text-xs font-mono rounded">
+                    {col}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5 — Route to Config Agent */}
+      {ruleJson && (
+        <div className="card p-5 border-2 border-primary/20 bg-primary/5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center justify-center size-7 rounded-full bg-success text-white text-xs font-bold shrink-0">✓</span>
+                <span className="text-sm text-gray-500">Investigation</span>
+                <KeenIcon icon="arrow-right" className="text-gray-400 text-xs" />
+                <span className="flex items-center justify-center size-7 rounded-full bg-primary text-white text-xs font-bold shrink-0">2</span>
+                <span className="text-sm font-semibold text-gray-800">Configure &amp; Deploy Rule</span>
+              </div>
+              <p className="text-sm text-gray-500 hidden lg:block">
+                Open the Config Agent to resolve dependencies, dry-run and deploy{' '}
+                <span className="font-mono text-xs text-gray-700">{ruleJson.rule_name}</span> to the rule engine.
+              </p>
+            </div>
+            <button
+              className="btn btn-primary btn-sm shrink-0"
+              onClick={() => navigate(`/ai-investigation/${run.run_id}/assistant`)}
+            >
+              Open Config Agent
+              <KeenIcon icon="arrow-right" className="ms-1" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6 — Agent Trace */}
+      <AgentStepLog runId={run.run_id} autoScroll={run.status === 'running'} />
 
       {/* Pretty report markdown fallback */}
       {run.pretty_report && !ruleJson && !noAction && (
