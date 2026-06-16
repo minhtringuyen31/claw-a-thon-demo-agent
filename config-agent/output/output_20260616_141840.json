@@ -1,0 +1,48 @@
+{
+  "events": [
+    {
+      "name": "payment",
+      "description": "Transaction evaluation for fraud detection",
+      "filter": "AND",
+      "actionCode": "REVIEW",
+      "decisionCode": "",
+      "variables": [],
+      "rules": [
+        {
+          "name": "Face Verification for High Value Daily Transactions",
+          "description": "Require face verification when app_id is 1202, amount is 10, and daily total transactions exceed 500,000",
+          "conditions": [
+            {
+              "field": "app_id",
+              "operator": "EQUALS",
+              "value": "1202"
+            },
+            {
+              "field": "amount",
+              "operator": "EQUALS",
+              "value": "10"
+            },
+            {
+              "field": "daily_transaction_total",
+              "operator": "GREATER_THAN",
+              "value": "500000"
+            }
+          ],
+          "infoCode": "FACE_VERIFICATION_REQUIRED"
+        },
+        {
+          "name": "Block High Anomaly Score Transactions",
+          "description": "Block or reject transactions with anomaly score greater than 0.7",
+          "conditions": [
+            {
+              "field": "transaction_anomaly_score",
+              "operator": "GREATER_THAN",
+              "value": "0.7"
+            }
+          ],
+          "infoCode": "HIGH_RISK_ANOMALY"
+        }
+      ]
+    }
+  ]
+}
