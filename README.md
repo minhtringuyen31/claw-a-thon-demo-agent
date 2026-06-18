@@ -8,6 +8,9 @@ AgentR giải quyết điều đó bằng cách tự động hóa toàn bộ vò
 
 Ý nghĩa thực sự của dự án không chỉ là tiết kiệm thời gian mà còn giúp đội Risk phản ứng nhanh hơn fraud. Quá trình xử lý được rút ngắn từ **vài ngày** xuống chỉ còn **vài phút**.
 
+#### 🎬 Demo Video [AgentR Demo Video](https://drive.google.com/file/d/1WhqAe3MZY7t7ty3yZCI6fXF9nR2V59Zw/view?usp=sharing)
+
+
 Kiến trúc hệ thống của **AgentR**:
 
 ![system-overview](/docs/system-overview.jpeg)
