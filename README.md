@@ -10,7 +10,7 @@ AgentR giải quyết điều đó bằng cách tự động hóa toàn bộ vò
 
 Kiến trúc hệ thống của **AgentR**:
 
-![system-overview](/docs/assets/system-overview.jpeg)
+![system-overview](/docs/system-overview.jpeg)
 
 - **Agent 1 — `fraud-analysis-agent`**  tự động điều tra dữ liệu, phân tích, tìm kiếm các behavior pattern của fraudster từ đó chuẩn bị một báo cáo toàn diện về các trường hợp này.
 - **Agent 2 — `config-agent`**  lấy cảm hứng từ **Claude Code**, **Config Agent** hỗ trợ strategist các tác vụ liên quan đến việc set up rule configuration lên hệ thống **Risk Engine**. Từ pattern được đề xuất ở agent 1 (hoặc mô tả của strategist trên khung chat), agent phân tích, suy luận, trao đổi, tương tác với stragist để sinh ra các bộ Rule Config và thực hiện tích hợp vào hệ thống khi được chấp nhận.
@@ -51,7 +51,7 @@ Một agent LangGraph phát hiện làn sóng gian lận mới nổi từ report
 
 ### Workflow (StateGraph)
 
-![fraud-analysis-agent-workflow](/docs/assets/fraud-analysis-topology.png)
+![fraud-analysis-agent-workflow](/docs/fraud-analysis-topology.png)
 
 **Các node** (`app/nodes/`):
 
@@ -101,7 +101,7 @@ Agent chat reasoning biến một fraud signal thành **rule config triển khai
 
 ### Workflow (StateGraph + interrupt)
 
-![config-builder-agent-workflow](/docs/assets/config-builder-agent-topology.png)
+![config-builder-agent-workflow](/docs/config-builder-agent-topology.png)
 
 **Các node** (`agent/nodes.py`):
 
