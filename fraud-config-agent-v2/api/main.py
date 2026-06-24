@@ -24,8 +24,7 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 from agent.graph import build_graph  # noqa: E402  (after load_dotenv)
-from services.fraud_report_client import ReportNotReady, fetch_report  # noqa: E402
-from services.memory_service import FileMemoryService  # noqa: E402
+from mcp_client import call_tool  # noqa: E402
 
 app = FastAPI(title="Fraud Config Agent v2")
 app.add_middleware(
@@ -47,7 +46,19 @@ from langgraph.checkpoint.sqlite import SqliteSaver  # noqa: E402
 _conn = sqlite3.connect(str(_BASE / "checkpoints.db"), check_same_thread=False)
 _checkpointer = SqliteSaver(_conn)
 _graph = build_graph(checkpointer=_checkpointer)
-_memory = FileMemoryService(_sessions_dir)
+
+
+def _mem_get(key: str):
+    r = call_tool("get_session", key=key)
+    return r.get("value") if r.get("found") else None
+
+
+def _mem_set(key: str, value) -> None:
+    call_tool("save_session", key=key, value=value)
+
+
+def _mem_append(key: str, item: dict) -> None:
+    call_tool("append_session", key=key, item=item)
 
 # Lightweight run registry (for listing; truth lives in the checkpointer).
 _runs: dict[str, dict] = {}
@@ -158,8 +169,8 @@ def _summarize_config(final_output: dict) -> str:
 
 
 def _run_chat(message: str, session_id: str, clarification_answer: str) -> dict:
-    clarify_history = _memory.get(f"clarify:{session_id}") or []
-    conv_history = _memory.get(f"conv:{session_id}") or []
+    clarify_history = _mem_get(f"clarify:{session_id}") or []
+    conv_history = _mem_get(f"conv:{session_id}") or []
     # Use the last turn's final_output as the base config for in-session modifications
     # (avoids pulling stale/unrelated configs from DB).
     prev_final_output = conv_history[-1].get("final_output", {}) if conv_history else {}
@@ -176,12 +187,12 @@ def _run_chat(message: str, session_id: str, clarification_answer: str) -> dict:
     status, values = _status_of(run_id)
 
     if status == "clarify":
-        _memory.set(f"clarify:{session_id}", values.get("clarify_history", []))
+        _mem_set(f"clarify:{session_id}", values.get("clarify_history", []))
         return {"status": "clarify", "question": values.get("clarify_question", ""),
                 "session_id": session_id, "run_id": run_id}
 
     # Proceeded — save this turn to conversation history.
-    _memory.set(f"clarify:{session_id}", [])
+    _mem_set(f"clarify:{session_id}", [])
     turn = {
         "user": message[:300],
         "requirement_summary": _summarize_requirement(values.get("requirement", {})),
@@ -189,7 +200,7 @@ def _run_chat(message: str, session_id: str, clarification_answer: str) -> dict:
         "final_output": values.get("final_output", {}),
     }
     updated_conv = (conv_history or []) + [turn]
-    _memory.set(f"conv:{session_id}", updated_conv[-10:])  # keep last 10 turns
+    _mem_set(f"conv:{session_id}", updated_conv[-10:])  # keep last 10 turns
 
     return {"status": status, "run_id": run_id, "session_id": session_id,
             "final_output": values.get("final_output", {}),
@@ -205,12 +216,13 @@ def chat(req: ChatRequest):
 
 @app.post("/runs/from-report")
 def from_report(req: FromReportRequest):
-    try:
-        report = fetch_report(req.run_id, base_url=req.fraud_agent_url)
-    except ReportNotReady as e:
-        raise HTTPException(409, str(e))
-    except Exception as e:
-        raise HTTPException(502, f"failed to fetch report: {e}")
+    kwargs = {"run_id": req.run_id}
+    if req.fraud_agent_url:
+        kwargs["base_url"] = req.fraud_agent_url
+    report = call_tool("fetch_fraud_report", **kwargs)
+    if "error" in report:
+        status_code = 409 if "not ready" in report["error"] else 502
+        raise HTTPException(status_code, report["error"])
 
     session_id = req.session_id or str(uuid.uuid4())
     run_id = str(uuid.uuid4())
@@ -275,9 +287,9 @@ def list_runs():
 
 @app.get("/rules")
 def list_db_rules(limit: int = 100):
-    """Deployed rules read straight from the config store (MySQL rule_config)."""
-    from services.config_store import get_config_store
-    return get_config_store().list_configs(limit=limit)
+    """Deployed rules read straight from the config store (via MCP)."""
+    result = call_tool("list_configs", limit=limit)
+    return result.get("configs", [])
 
 
 @app.get("/configs")

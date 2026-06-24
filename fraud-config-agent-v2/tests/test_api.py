@@ -52,7 +52,13 @@ def test_from_report_path(monkeypatch):
                           "metrics": {"precision": 0.9, "recall": 0.7, "f1": 0.79}},
         "recommendation": "Đề xuất REJECT.",
     }
-    monkeypatch.setattr(main, "fetch_report", lambda run_id, base_url=None: canned)
+
+    def _mock_call_tool(name, **kw):
+        if name == "fetch_fraud_report":
+            return canned
+        return {}
+
+    monkeypatch.setattr(main, "call_tool", _mock_call_tool)
     r = client.post("/runs/from-report", json={"run_id": "fraud-run-9"})
     data = r.json()
     assert data["status"] == "awaiting_review"

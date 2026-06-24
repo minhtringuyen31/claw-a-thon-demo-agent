@@ -1,10 +1,9 @@
-"""Node-level tests with MockLLM + an injected MockConfigStore."""
+"""Node-level tests with MockLLM + a monkeypatched call_tool."""
 import agent.nodes as nodes
 from agent.nodes import (
     build_config_node, clarify_node, dependency_resolver, human_review_node,
     intake_node, update_conf_node, validator_node,
 )
-from services.config_store import MockConfigStore
 
 
 def _state(**kw):
@@ -43,7 +42,7 @@ def test_clarify_proceeds():
 
 
 def test_dependency_resolver_create_when_empty(monkeypatch):
-    monkeypatch.setattr(nodes, "get_config_store", lambda: MockConfigStore())
+    monkeypatch.setattr(nodes, "call_tool", lambda name, **kw: {})
     out = dependency_resolver(_state(requirement={"app_id": "999", "profile_name": "X",
                                                   "conditions": [{"field": "amount", "operator": "GREATER_THAN", "value": "1"}]}))
     assert out["operation"] == "create"
@@ -51,14 +50,19 @@ def test_dependency_resolver_create_when_empty(monkeypatch):
 
 
 def test_dependency_resolver_update_when_rule_exists(monkeypatch):
-    store = MockConfigStore()
-    store.save_config("123", "cfg", {"events": [{
+    existing = {"events": [{
         "name": "payment", "actionCode": "REJECT",
         "rules": [{"name": "High Amount", "conditions": [
             {"field": "amount", "operator": "GREATER_THAN", "value": "5000000"}]}],
-    }]})
-    monkeypatch.setattr(nodes, "get_config_store", lambda: store)
-    req = {"app_id": "123", "profile_name": "High Amount",
+    }]}
+
+    def _mock_call_tool(name, **kw):
+        if name == "get_config":
+            return existing
+        return {}
+
+    monkeypatch.setattr(nodes, "call_tool", _mock_call_tool)
+    req = {"app_id": "123", "event_name": "payment", "profile_name": "High Amount",
            "conditions": [{"field": "amount", "operator": "GREATER_THAN", "value": "5000000"}]}
     out = dependency_resolver(_state(requirement=req))
     assert out["operation"] == "update"
@@ -80,10 +84,8 @@ def test_build_config_emits_appid_as_condition():
            "conditions": [{"field": "amount", "operator": "GREATER_THAN", "value": "5000000"}]}
     out = build_config_node(_state(requirement=req))
     conds = out["json_draft"]["events"][0]["rules"][0]["conditions"]
-    # appID is the FIRST condition, and is not promoted to a variable.
     assert conds[0] == {"field": "appID", "operator": "EQUALS", "value": "123"}
     assert out["json_draft"]["events"][0]["variables"] == []
-    # no top-level app_id field on the config
     assert "app_id" not in out["json_draft"]
 
 
@@ -113,16 +115,26 @@ def test_human_review_is_noop():
     assert human_review_node(_state()) == {}
 
 
-def test_update_conf_writes_on_approve(monkeypatch):
-    store = MockConfigStore()
-    monkeypatch.setattr(nodes, "get_config_store", lambda: store)
+def test_update_conf_writes_on_approve(monkeypatch, tmp_path):
+    saved = {}
+
+    def _mock_call_tool(name, **kw):
+        if name == "save_config":
+            saved["event_name"] = kw.get("event_name")
+            saved["config_json"] = kw.get("config_json")
+            return {"written": True, "row_id": 1, "target": "mock"}
+        return {}
+
+    monkeypatch.setattr(nodes, "call_tool", _mock_call_tool)
+    monkeypatch.chdir(tmp_path)
     out = update_conf_node(_state(
         review_decision="approve", approved_by="me",
         requirement={"app_id": "123", "profile_name": "R"},
-        final_output={"events": []}, run_id="run-1",
+        final_output={"events": [{"name": "payment", "actionCode": "REJECT", "rules": []}]},
+        run_id="run-1",
     ))
     assert out["write_result"]["written"] is True
-    assert store.get_config("123") == {"events": []}
+    assert saved["event_name"] == "payment"
 
 
 def test_update_conf_skips_on_reject():

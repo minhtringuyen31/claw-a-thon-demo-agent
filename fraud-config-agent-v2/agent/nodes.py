@@ -12,10 +12,21 @@ from agent.prompts import (
 )
 from agent.schema import FraudConfig
 from llm import get_llm
-from services.config_store import get_config_store
-from services.memory_service import FileMemoryService
+from mcp_client import call_tool
 
-_memory = FileMemoryService()
+
+def _get_config(event_name: str) -> dict:
+    return call_tool("get_config", event_name=event_name)
+
+
+def _save_config(event_name: str, description: str, config_json: dict,
+                 source_run_id: str | None = None, created_by: str | None = None) -> dict:
+    return call_tool("save_config", event_name=event_name, description=description,
+                     config_json=config_json, source_run_id=source_run_id, created_by=created_by)
+
+
+def _append_session(key: str, item: dict) -> None:
+    call_tool("append_session", key=key, item=item)
 
 
 def _call_llm(role: str, system: str, user: str) -> dict:
@@ -120,7 +131,7 @@ def dependency_resolver(state: "dict") -> dict:
 
     # Prefer session-level existing_config (in-progress edits) over DB.
     existing = state.get("existing_config") or (
-        get_config_store().get_config(intended_event) if intended_event else {}
+        _get_config(intended_event) if intended_event else {}
     ) or {}
 
     # If the intended event name differs from existing, treat as fresh create.
@@ -215,7 +226,7 @@ def update_conf_node(state: "dict") -> dict:
             or req.get("profile_name")
             or event_name
         )
-        last_result = get_config_store().save_config(
+        last_result = _save_config(
             event_name=event_name,
             description=description,
             config_json=ev,
@@ -225,10 +236,10 @@ def update_conf_node(state: "dict") -> dict:
 
     write_result = {**last_result, "events_saved": len(events)}
 
-    # Persist a session breadcrumb.
+    # Persist a session breadcrumb via MCP.
     sid = state.get("session_id", "")
     if sid:
-        _memory.append(f"session:{sid}", {
+        _append_session(f"session:{sid}", {
             "event_name": first_event_name,
             "output_file": str(fpath), "write_result": write_result,
         })
