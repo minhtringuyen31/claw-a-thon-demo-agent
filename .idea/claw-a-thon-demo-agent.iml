@@ -7,6 +7,9 @@
       <sourceFolder url="file://$MODULE_DIR$/fraud-config-agent-v2" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/fraud-risk-analysis-agent" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/fraud-analysis-agent" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/romantic-lamport-e17c68/fraud-analysis-agent" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/.claude/worktrees/sweet-einstein-fa9cdb/fraud-analysis-agent" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/mcp-server" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/agent/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/config-agent/.venv" />

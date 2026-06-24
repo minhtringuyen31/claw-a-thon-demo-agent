@@ -1,4 +1,21 @@
 services:
+  mcp-server:
+    build: ./mcp-server
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - MYSQL_HOST=49.213.71.37
+      - MYSQL_PORT=3306
+      - MYSQL_DB=risk_db
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=agentdb@123
+      - FRAUD_AGENT_URL=http://fraud-analysis-agent:8080
+      - SESSIONS_DIR=/app/sessions
+      - MCP_SERVER_PORT=8000
+    volumes:
+      - sessions_data:/app/sessions
+
   agent:
     build: ./agent
     ports:
@@ -17,11 +34,20 @@ services:
       - "8081:8080"
     env_file: .env
     environment:
-      - MYSQL_HOST=49.213.71.37
-      - MYSQL_PORT=3306
-      - MYSQL_DB=risk_db
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=agentdb@123
+      - MCP_SERVER_URL=http://mcp-server:8000
+    depends_on:
+      - mcp-server
+
+  fraud-config-agent-v2:
+    build: ./fraud-config-agent-v2
+    ports:
+      - "8082:8080"
+    env_file: .env
+    environment:
+      - MCP_SERVER_URL=http://mcp-server:8000
+    depends_on:
+      - mcp-server
+      - fraud-analysis-agent
 
   ui:
     build: ./ui
@@ -42,3 +68,6 @@ services:
       - "3000:8080"
     depends_on:
       - fraud-analysis-agent
+
+volumes:
+  sessions_data:
